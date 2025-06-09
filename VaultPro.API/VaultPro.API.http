@@ -1,0 +1,6 @@
+@VaultPro.API_HostAddress = http://localhost:5012
+
+GET {{VaultPro.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
