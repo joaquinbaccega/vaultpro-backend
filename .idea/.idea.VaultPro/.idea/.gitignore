@@ -1,0 +1,34 @@
+﻿## Archivos y carpetas de .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Archivos de Rider
+.idea/
+*.sln.iml
+
+## Archivos de log y otros temporales
+*.log
+*.vspscc
+*.vssscc
+*.ncrunch*
+_ReSharper*/
+.vscode/
+
+## Archivos de configuración locales
+appsettings.*.json
+appsettings.Development.json
+.env
+*.pfx
+
+## Docker
+**/Dockerfile
+**/docker-compose*
+
+## Otros
+.vs/
+TestResults/
+*.db
