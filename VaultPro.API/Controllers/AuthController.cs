@@ -18,11 +18,15 @@ public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly VaultDbContext _context;
+    private readonly ICifradoService _cifrado;
+    
 
-    public AuthController(IUserService userService, VaultDbContext context)
+    public AuthController(IUserService userService, VaultDbContext context, ICifradoService cifrado)
     {
         _userService = userService;
         _context = context;
+        _cifrado = cifrado;
+        
     }
 
     [HttpPost("login")]
@@ -88,6 +92,26 @@ public class AuthController : ControllerBase
     }
     
     [Authorize]
+    [HttpGet("validar-2fa")]
+    public async Task<IActionResult> Validar2FA([FromQuery] string codigo2fa)
+    {
+        var email = User.Identity?.Name;
+        if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+
+        var valido = await _userService.ValidarCodigo2Fa(email, codigo2fa);
+        if (!valido)
+            return BadRequest(new { message = "Código 2FA inválido o expirado" });
+
+        return Ok(new
+        {
+            message = "2FA validado correctamente",
+            expira = DateTime.UtcNow.AddMinutes(5)
+        });
+    }
+
+
+    
+    [Authorize]
     [HttpPost("activar-2fa")]
     public async Task<IActionResult> Activar2FA()
     {
@@ -123,4 +147,20 @@ public class AuthController : ControllerBase
             qrCodeBase64 = $"data:image/png;base64,{qrBase64}"
         });
     }
+    
+    [Authorize]
+    [Requires2FA]
+    [HttpGet("ver-clave/{id}")]
+    public async Task<IActionResult> VerClave(Guid id)
+    {
+        var email = User.Identity?.Name;
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+    
+        var clave = await _context.Contraseñas.FirstOrDefaultAsync(c => c.Id == id && c.UsuarioId == usuario.Id);
+        if (clave == null) return NotFound();
+
+        var contraseñaDesencriptada = _cifrado.Descifrar(clave.ContraseñaCifrada);
+        return Ok(new { contraseña = contraseñaDesencriptada });
+    }
+    
 }

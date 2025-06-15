@@ -19,4 +19,7 @@ public class Usuario
     public string? Secreto2FA { get; set; }
 
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
+    
+    public DateTime? AutenticadorUltimoUso { get; set; } = DateTime.UtcNow;
+    public DateTime? AutenticadorExpiracion { get; set; } = DateTime.UtcNow.AddMinutes(5);
 }

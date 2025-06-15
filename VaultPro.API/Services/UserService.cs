@@ -36,9 +36,12 @@ public class UserService : IUserService
             if (string.IsNullOrWhiteSpace(codigo2fa)) return "REQUIERE_2FA";
 
             var totp = new Totp(Base32Encoding.ToBytes(usuario.Secreto2FA!));
+            usuario.AutenticadorUltimoUso = DateTime.UtcNow;
+            usuario.AutenticadorExpiracion = DateTime.UtcNow.AddMinutes(5);
             Console.WriteLine($"Código esperado: {totp.ComputeTotp()}");
             if (!totp.VerifyTotp(codigo2fa, out _, new VerificationWindow(1, 1)))
                 return null;
+            _context.SaveChanges();
         }
 
         // Generar token
@@ -59,5 +62,23 @@ public class UserService : IUserService
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
+    
+    public async Task<bool> ValidarCodigo2Fa(string email, string codigo2fa)
+    {
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+        if (usuario == null || !usuario.Tiene2FA || string.IsNullOrWhiteSpace(usuario.Secreto2FA))
+            return false;
+
+        var totp = new Totp(Base32Encoding.ToBytes(usuario.Secreto2FA));
+        if (!totp.VerifyTotp(codigo2fa, out _, new VerificationWindow(1, 1)))
+            return false;
+
+        usuario.AutenticadorUltimoUso = DateTime.UtcNow;
+        usuario.AutenticadorExpiracion = DateTime.UtcNow.AddMinutes(5);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
     
 }
