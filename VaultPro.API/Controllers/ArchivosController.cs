@@ -121,4 +121,23 @@ public class ArchivosController : ControllerBase
 
         return Ok(new { message = "Archivo eliminado correctamente" });
     }
+    
+    [HttpGet("{id}/descargar")]
+    public async Task<IActionResult> DescargarArchivo(Guid id)
+    {
+        var usuarioId = ObtenerUsuarioId();
+        if (usuarioId == null) return Unauthorized();
+
+        var archivo = await _context.Archivos
+            .FirstOrDefaultAsync(a => a.Id == id && a.UsuarioId == usuarioId.Value);
+
+        if (archivo == null) return NotFound();
+
+        var contenidoCifrado = Encoding.UTF8.GetString(archivo.ContenidoCifrado);
+        var contenidoPlanoBase64 = _cifrado.Descifrar(contenidoCifrado);
+        var contenidoBytes = Convert.FromBase64String(contenidoPlanoBase64);
+
+        return File(contenidoBytes, archivo.TipoMime, archivo.NombreOriginal);
+    }
+
 }
